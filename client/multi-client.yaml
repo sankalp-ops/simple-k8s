@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: multi-client-deployment
+  name: multi-client-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: multi-client-deployment
+  template:
+    metadata:
+      labels:
+        app: multi-client-deployment
+    spec:
+      containers:
+      - image: stephengrider/multi-client
+        name: multi-client
