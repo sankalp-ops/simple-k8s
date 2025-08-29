@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: multi-server-deployment
+  name: multi-server-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: multi-server-deployment
+  template:
+    metadata:
+      labels:
+        app: multi-server-deployment
+    spec:
+      containers:
+      - image: stephengrider/multi-server
+        name: multi-server
