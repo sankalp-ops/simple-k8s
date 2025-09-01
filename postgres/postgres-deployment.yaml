@@ -14,9 +14,16 @@ spec:
       labels:
         app: postgres-deployment
     spec:
+      volumes:
+        - name: postgres-pvc-volume
+          PersistentVolumeClaim:
+            claimName: postgres-pvc
       containers:
       - image: postgres
         name: postgres
+        volumeMounts:
+        - name: postgres-pvc-volume
+          mountPath: /var/lib/postgresql/data
         env:
         - name: POSTGRES_PASSWORD
           valueFrom:
