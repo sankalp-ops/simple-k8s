@@ -17,5 +17,10 @@ spec:
       containers:
       - image: stephengrider/multi-worker
         name: multi-worker
+        env:
+        - name: REDIS_HOST
+          value: redis-service
+        - name: REDIS_PORT
+          value: 6379
 
 
