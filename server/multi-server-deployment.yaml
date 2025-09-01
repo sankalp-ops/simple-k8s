@@ -17,3 +17,21 @@ spec:
       containers:
       - image: stephengrider/multi-server
         name: multi-server
+        env:
+          - name: PGHOST
+            value: postgres-service
+          - name: REDIS_HOST
+            value: redis-service
+          - name: REDIS_PORT
+            value: "6379"
+          - name: PGUSER
+            value: postgres
+          - name: PGDATABASE
+            value: postgres
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgres-env
+                key: POSTGRES_PASSWORD
+          - name: PGPORT
+            value: "5432"
