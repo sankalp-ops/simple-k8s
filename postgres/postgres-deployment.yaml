@@ -17,3 +17,9 @@ spec:
       containers:
       - image: postgres
         name: postgres
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-env
+              key: POSTGRES_PASSWORD
