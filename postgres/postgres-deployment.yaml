@@ -16,10 +16,10 @@ spec:
     spec:
       volumes:
         - name: postgres-pvc-volume
-          PersistentVolumeClaim:
+          persistentVolumeClaim:
             claimName: postgres-pvc
       containers:
-      - image: postgres
+      - image: postgres:10
         name: postgres
         volumeMounts:
         - name: postgres-pvc-volume
