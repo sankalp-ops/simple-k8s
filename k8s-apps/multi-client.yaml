@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   labels:
     app: multi-client-deployment
+    tier: frontend
   name: multi-client-deployment
 spec:
   replicas: 3
@@ -17,3 +18,4 @@ spec:
       containers:
       - image: stephengrider/multi-client
         name: multi-client
+
