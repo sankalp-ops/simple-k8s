@@ -60,6 +60,12 @@ resource "aws_eks_cluster" "k8s-cluster" {
   depends_on = [aws_iam_role_policy_attachment.eks_policy]
 }
 
+resource "aws_eks_addon" "ebs_csi_driver" {
+  cluster_name = aws_eks_cluster.k8s-cluster.name
+  addon_name   = "aws-ebs-csi-driver"
+  depends_on = [ aws_eks_node_group.example ]
+}
+
 resource "aws_iam_role" "iam_node_role" {
   name = "node-group-role"
   assume_role_policy = jsonencode(
@@ -83,36 +89,45 @@ resource "aws_iam_role" "iam_node_role" {
   
 }
 resource "aws_iam_role_policy_attachment" "AmazonEKSWorkerNodePolicy" {
-
   role = aws_iam_role.iam_node_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
 }
-resource "aws_iam_role_policy_attachment" "AmazonEC2ContainerRegistryPullOnly" {
 
+resource "aws_iam_role_policy_attachment" "AmazonEC2ContainerRegistryPullOnly" {
   role = aws_iam_role.iam_node_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly"
 }
+
+resource "aws_iam_role_policy_attachment" "AmazonEKS_CNI_Policy" {
+  role = aws_iam_role.iam_node_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+}
+
+resource "aws_iam_role_policy_attachment" "AmazonEBSCSIDriverPolicy" {
+  role = aws_iam_role.iam_node_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+}
+
 resource "aws_eks_node_group" "example" {
-  cluster_name    = aws_eks_cluster.example.name
-  node_group_name = "example"
-  node_role_arn   = aws_iam_role.example.arn
-  subnet_ids      = aws_subnet.example[*].id
+  cluster_name    = aws_eks_cluster.k8s-cluster.name
+  node_group_name = "simple-k8s-cluster-nodes"
+  node_role_arn   = aws_iam_role.iam_node_role.arn
+  subnet_ids      = data.aws_subnets.default_subnet.ids
 
   scaling_config {
-    desired_size = 1
-    max_size     = 2
-    min_size     = 1
+    desired_size = 3
+    max_size     = 4
+    min_size     = 2
   }
 
-  update_config {
-    max_unavailable = 1
-  }
+  instance_types = ["t2.small"]
 
   # Ensure that IAM Role permissions are created before and deleted after EKS Node Group handling.
   # Otherwise, EKS will not be able to properly delete EC2 Instances and Elastic Network Interfaces.
   depends_on = [
     aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy,
-    #aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy,
-    aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly,
+    aws_iam_role_policy_attachment.AmazonEKS_CNI_Policy,
+    aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryPullOnly,
+    aws_iam_role_policy_attachment.AmazonEBSCSIDriverPolicy
   ]
 }
