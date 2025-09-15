@@ -36,6 +36,10 @@ resource "aws_iam_role_policy_attachment" "eks_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
+resource "aws_route53_zone" "myapps_dns" {
+  name = "myfibapp.xyz"
+}
+
 data "aws_vpc" "default_vpc" {
   default = true
 }
@@ -117,6 +121,28 @@ resource "aws_iam_role" "csi_irsa_role" {
   })  
 }
 
+resource "aws_iam_role" "external_dns_role" {
+  name = "external_dns_role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          Federated = aws_iam_openid_connect_provider.oidc.arn
+        },
+        Action = "sts:AssumeRoleWithWebIdentity",
+        Condition = {
+          StringEquals = {
+            # OIDC issuer URL without https://
+            "${replace(aws_eks_cluster.k8s-cluster.identity[0].oidc[0].issuer, "https://", "")}:sub" = "system:serviceaccount:external-dns:external-dns"
+          }
+        }
+      }
+    ]
+  })  
+}
+
 resource "aws_iam_role_policy_attachment" "AmazonEKSWorkerNodePolicy" {
   role = aws_iam_role.iam_node_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
@@ -136,6 +162,11 @@ resource "aws_iam_role_policy_attachment" "AmazonEBSCSIDriverPolicy" {
   role = aws_iam_role.csi_irsa_role.name
   #role = aws_iam_role.iam_node_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "AmazonRoute53FullAccess" {
+  role = aws_iam_role.external_dns_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonRoute53FullAccess"
 }
 
 resource "aws_eks_node_group" "example" {

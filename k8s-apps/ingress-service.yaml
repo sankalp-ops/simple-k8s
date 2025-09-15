@@ -5,10 +5,17 @@ metadata:
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$1
     kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    external-dns.alpha.kubernetes.io/hostname: myfibapp.xyz
   name: backend-service
 spec:
+  tls:
+  - hosts:
+    - myfibapp.xyz
+    secretName: app-tls
   rules:
-  - http:
+  - host: myfibapp.xyz
+    http:
       paths:
       - backend:
           service:
@@ -23,10 +30,17 @@ kind: Ingress
 metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    external-dns.alpha.kubernetes.io/hostname: myfibapp.xyz
   name: frontend-service
 spec:
+  tls:
+  - hosts:
+    - myfibapp.xyz
+    secretName: app-tls
   rules:
-  - http:
+  - host: myfibapp.xyz
+    http:
       paths:
       - backend:
           service:
