@@ -1,4 +1,12 @@
 terraform {
+  backend "s3" {
+    bucket         = "myfibapp-tf-state-bucket"
+    key            = "terraform.tfstate"
+    region         = "us-east-1"    # required here
+    dynamodb_table = "terraform-locks"
+    encrypt        = true
+  }
+  
   required_providers {
     aws = {
       source  = "hashicorp/aws"
