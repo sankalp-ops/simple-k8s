@@ -64,6 +64,8 @@ resource "aws_eks_cluster" "k8s-cluster" {
   depends_on = [aws_iam_role_policy_attachment.eks_policy]
 }
 
+# Rules for setting up a storage device within EKS
+
 resource "aws_eks_addon" "ebs_csi_driver" {
   cluster_name = aws_eks_cluster.k8s-cluster.name
   addon_name   = "aws-ebs-csi-driver"
@@ -92,6 +94,8 @@ resource "aws_iam_role" "iam_node_role" {
 }
   )
 }
+
+# To enable IMDSV2 resources "oidc" and "csi_irsa_role" are used.
 
 resource "aws_iam_openid_connect_provider" "oidc" {
   url             = aws_eks_cluster.k8s-cluster.identity[0].oidc[0].issuer
@@ -191,4 +195,6 @@ resource "aws_eks_node_group" "example" {
     aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryPullOnly,
     aws_iam_role_policy_attachment.AmazonEBSCSIDriverPolicy
   ]
+
 }
+
