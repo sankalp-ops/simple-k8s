@@ -99,7 +99,7 @@ jobs:
             --set policy=upsert-only \
             --set registry=txt \
             --set txtOwnerId="${{ steps.tfout.outputs.domain }}" \
-            --set domainFilters= "${{ steps.tfout.outputs.domain }}"  \
+            --set domainFilters={"${{ steps.tfout.outputs.domain }}"}  \
             --set serviceAccount.create=false \
             --set serviceAccount.name=external-dns \
             --kubeconfig $KUBECONFIG_FILE
