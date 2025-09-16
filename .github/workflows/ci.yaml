@@ -52,7 +52,7 @@ jobs:
       - name: Capture Terraform Outputs
         id: tfout
         run: |
-          cd ${{  env.work_dir  }}
+          cd ${{  env.WORK_DIR  }}
           terraform output -json > tf-output.json
           echo "cluster=$(jq -r '."k8s-cluster".value' tf-output.json)"   >> $GITHUB_OUTPUT
           echo "region=$(jq -r '.aws_region.value' tf-output.json)"  >> $GITHUB_OUTPUT
