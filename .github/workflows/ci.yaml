@@ -11,6 +11,7 @@ jobs:
 
     env:
       KUBECONFIG_FILE: ./kubeconfig-eks
+      aws-region: "us-east-1"
 
     steps:
       # 1️⃣ Check out code
