@@ -2,11 +2,11 @@ terraform {
   backend "s3" {
     bucket         = "myfibapp-tf-state-bucket"
     key            = "terraform.tfstate"
-    region         = "us-east-1"    # required here
+    region         = "us-east-1" # required here
     dynamodb_table = "terraform-locks"
     encrypt        = true
   }
-  
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -17,6 +17,10 @@ terraform {
 
 provider "aws" {
   region = "us-east-1"
+}
+
+output "aws_region" {
+  value = "us-east-1"
 }
 
 resource "aws_iam_role" "eks_role" {
@@ -48,6 +52,10 @@ resource "aws_route53_zone" "myapps_dns" {
   name = "myfibapp.xyz"
 }
 
+output "aws_myapps_dns" {
+  value = aws_route53_zone.myapps_dns.name
+}
+
 data "aws_vpc" "default_vpc" {
   default = true
 }
@@ -72,34 +80,39 @@ resource "aws_eks_cluster" "k8s-cluster" {
   depends_on = [aws_iam_role_policy_attachment.eks_policy]
 }
 
+output "k8s-cluster" {
+  value = aws_eks_cluster.k8s-cluster.name
+
+}
+
 # Rules for setting up a storage device within EKS
 
 resource "aws_eks_addon" "ebs_csi_driver" {
-  cluster_name = aws_eks_cluster.k8s-cluster.name
-  addon_name   = "aws-ebs-csi-driver"
-  depends_on = [ aws_eks_node_group.example ]
+  cluster_name             = aws_eks_cluster.k8s-cluster.name
+  addon_name               = "aws-ebs-csi-driver"
+  depends_on               = [aws_eks_node_group.example]
   service_account_role_arn = aws_iam_role.csi_irsa_role.arn
 }
 
 resource "aws_iam_role" "iam_node_role" {
   name = "node-group-role"
   assume_role_policy = jsonencode(
-  {
-    "Version": "2012-10-17",
-    "Statement": [
+    {
+      "Version" : "2012-10-17",
+      "Statement" : [
         {
-            "Effect": "Allow",
-            "Action": [
-                "sts:AssumeRole"
-            ],
-            "Principal": {
-                "Service": [
-                    "ec2.amazonaws.com"
-                ]
-            }
+          "Effect" : "Allow",
+          "Action" : [
+            "sts:AssumeRole"
+          ],
+          "Principal" : {
+            "Service" : [
+              "ec2.amazonaws.com"
+            ]
+          }
         }
-    ]
-}
+      ]
+    }
   )
 }
 
@@ -130,7 +143,7 @@ resource "aws_iam_role" "csi_irsa_role" {
         }
       }
     ]
-  })  
+  })
 }
 
 resource "aws_iam_role" "external_dns_role" {
@@ -152,21 +165,21 @@ resource "aws_iam_role" "external_dns_role" {
         }
       }
     ]
-  })  
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "AmazonEKSWorkerNodePolicy" {
-  role = aws_iam_role.iam_node_role.name
+  role       = aws_iam_role.iam_node_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
 }
 
 resource "aws_iam_role_policy_attachment" "AmazonEC2ContainerRegistryPullOnly" {
-  role = aws_iam_role.iam_node_role.name
+  role       = aws_iam_role.iam_node_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly"
 }
 
 resource "aws_iam_role_policy_attachment" "AmazonEKS_CNI_Policy" {
-  role = aws_iam_role.iam_node_role.name
+  role       = aws_iam_role.iam_node_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
 }
 
@@ -177,7 +190,7 @@ resource "aws_iam_role_policy_attachment" "AmazonEBSCSIDriverPolicy" {
 }
 
 resource "aws_iam_role_policy_attachment" "AmazonRoute53FullAccess" {
-  role = aws_iam_role.external_dns_role.name
+  role       = aws_iam_role.external_dns_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonRoute53FullAccess"
 }
 
@@ -205,4 +218,3 @@ resource "aws_eks_node_group" "example" {
   ]
 
 }
-
