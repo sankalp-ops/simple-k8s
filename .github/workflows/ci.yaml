@@ -38,7 +38,7 @@ jobs:
             terraform init -input=false
             pwd
             ls
-        working-directory: ${{  env.WORK_DIR  }}        # ✅ path to your terraform folder
+        working-directory: ./Terraform       # ✅ path to your terraform folder
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan -input=false
