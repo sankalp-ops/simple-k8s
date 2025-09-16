@@ -76,7 +76,6 @@ jobs:
       - name: Deploy Ingress NGINX
         run: |
           helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-          helm repo update
           helm upgrade --install ingress-nginx ingress-nginx \
             --repo https://kubernetes.github.io/ingress-nginx \
             --namespace ingress-nginx \
@@ -93,14 +92,13 @@ jobs:
       - name: Deploy ExternalDNS
         run: |
           helm repo add bitnami https://charts.bitnami.com/bitnami
-          helm repo update
           helm upgrade --install external-dns bitnami/external-dns \
             --namespace external-dns \
             --create-namespace \
             --set provider=aws \
             --set policy=upsert-only \
             --set registry=txt \
-            --set txtOwnerId=$CLUSTER_NAME \
+            --set txtOwnerId="${{ steps.tfout.outputs.domain }}" \
             --set domainFilters= "${{ steps.tfout.outputs.domain }}"  \
             --set serviceAccount.create=false \
             --set serviceAccount.name=external-dns \
@@ -110,7 +108,6 @@ jobs:
       - name: Deploy Cert Manager
         run: |
           helm repo add jetstack https://charts.jetstack.io
-          helm repo update
           helm upgrade --install cert-manager jetstack/cert-manager \
             --namespace cert-manager \
             --create-namespace \
