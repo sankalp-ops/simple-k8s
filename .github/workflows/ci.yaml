@@ -54,9 +54,9 @@ jobs:
         run: |
           cd ${{  env.work_dir  }}
           terraform output -json > tf-output.json
-          echo "cluster=$(jq -r .k8s-cluster.value tf-output.json)"   >> $GITHUB_OUTPUT
-          echo "region=$(jq -r .aws_region.value tf-output.json)"  >> $GITHUB_OUTPUT
-          echo "domain=$(jq -r .aws_myapps_dns.value tf-output.json)"     >> $GITHUB_OUTPUT
+          echo "cluster=$(jq -r '."k8s-cluster".value' tf-output.json)"   >> $GITHUB_OUTPUT
+          echo "region=$(jq -r '.aws_region.value' tf-output.json)"  >> $GITHUB_OUTPUT
+          echo "domain=$(jq -r '.aws_myapps_dns.value' tf-output.json)"     >> $GITHUB_OUTPUT
 
       # 5️⃣ Fetch kubeconfig for the new/existing cluster
       - name: Download kubeconfig
