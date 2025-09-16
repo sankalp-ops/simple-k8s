@@ -1,0 +1,122 @@
+name: Provision EKS & Deploy App
+
+on:
+  push:
+    branches: [ main ]       # run on pushes to main; adjust as needed
+  workflow_dispatch:         # allow manual runs from the Actions tab
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      KUBECONFIG_FILE: ./kubeconfig-eks
+      AWS_REGION: "us-east-1"
+
+    steps:
+      # 1️⃣ Check out code
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # 2️⃣ Terraform CLI
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.5
+
+      # 3️⃣ AWS credentials
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 4️⃣ Terraform Init/Plan/Apply
+      - name: Terraform Init
+        run:   |
+            terraform init -input=false
+            pwd
+            ls
+        working-directory: ./Terraform       # ✅ path to your terraform folder
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan -input=false
+        working-directory: ${{  env.WORK_DIR  }}
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -input=false tfplan
+        working-directory: ${{  env.WORK_DIR  }}
+
+      - name: Capture Terraform Outputs
+        id: tfout
+        run: |
+          cd ${{  env.work_dir  }}
+          terraform output -json > tf-output.json
+          echo "cluster=$(jq -r .k8s-cluster.value tf-output.json)"   >> $GITHUB_OUTPUT
+          echo "region=$(jq -r .aws_region.value tf-output.json)"  >> $GITHUB_OUTPUT
+          echo "domain=$(jq -r .aws_myapps_dns.value tf-output.json)"     >> $GITHUB_OUTPUT
+
+      # 5️⃣ Fetch kubeconfig for the new/existing cluster
+      - name: Download kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --name "${{ steps.tfout.outputs.cluster }}"  \
+            --region "${{ steps.tfout.outputs.region }}"  \
+            --kubeconfig $KUBECONFIG_FILE
+
+      # 6️⃣ Install Helm
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.18.6
+
+      # 7️⃣ Deploy Ingress-NGINX
+      - name: Deploy Ingress NGINX
+        run: |
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+          helm repo update
+          helm upgrade --install ingress-nginx ingress-nginx \
+            --repo https://kubernetes.github.io/ingress-nginx \
+            --namespace ingress-nginx \
+            --create-namespace \
+            --set-string controller.service.annotations."service.beta.kubernetes.io/aws-load-balancer-type"="nlb" \
+            --kubeconfig $KUBECONFIG_FILE
+
+      # 8️⃣ ExternalDNS ServiceAccount & Chart
+      - name: Create external-dns namespace & SA
+        run: |
+          kubectl create ns external-dns --kubeconfig $KUBECONFIG_FILE || true
+          kubectl apply -f ./k8s-apps/service-account.yaml --kubeconfig $KUBECONFIG_FILE
+
+      - name: Deploy ExternalDNS
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo update
+          helm upgrade --install external-dns bitnami/external-dns \
+            --namespace external-dns \
+            --create-namespace \
+            --set provider=aws \
+            --set policy=upsert-only \
+            --set registry=txt \
+            --set txtOwnerId=$CLUSTER_NAME \
+            --set domainFilters= "${{ steps.tfout.outputs.domain }}"  \
+            --set serviceAccount.create=false \
+            --set serviceAccount.name=external-dns \
+            --kubeconfig $KUBECONFIG_FILE
+
+      # 9️⃣ Cert-Manager
+      - name: Deploy Cert Manager
+        run: |
+          helm repo add jetstack https://charts.jetstack.io
+          helm repo update
+          helm upgrade --install cert-manager jetstack/cert-manager \
+            --namespace cert-manager \
+            --create-namespace \
+            --set installCRDs=true \
+            --kubeconfig $KUBECONFIG_FILE
+
+      # 🔟 Deploy your own application
+      #- name: Deploy App
+       # run: |
+        #  kubectl apply -f ./k8s-apps --kubeconfig $KUBECONFIG_FILE
