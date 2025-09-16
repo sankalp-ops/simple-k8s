@@ -34,7 +34,9 @@ jobs:
 
       # 4️⃣ Terraform Init/Plan/Apply
       - name: Terraform Init
-        run: terraform init -input=false
+        run:   |
+            terraform init -input=false
+            pwd
         working-directory: ${{  env.work_dir  }}        # ✅ path to your terraform folder
 
       - name: Terraform Plan
