@@ -115,6 +115,11 @@ jobs:
             --kubeconfig $KUBECONFIG_FILE
 
       # 🔟 Deploy your own application
-      #- name: Deploy App
-       # run: |
-        #  kubectl apply -f ./k8s-apps --kubeconfig $KUBECONFIG_FILE
+      - name: Deploy App
+        run: |
+          kubectl apply -f ./k8s-apps/postgres-secret.yaml --kubeconfig $KUBECONFIG_FILE
+          kubectl apply -f ./k8s-apps/postgres-deployment.yaml --kubeconfig $KUBECONFIG_FILE
+          kubectl apply -f ./k8s-apps/postgres-pvc.yaml --kubeconfig $KUBECONFIG_FILE
+          kubectl apply -f ./k8s-apps/postgres-service.yaml --kubeconfig $KUBECONFIG_FILE
+          sleep 5
+          kubectl apply -f ./k8s-apps -R --kubeconfig $KUBECONFIG_FILE
