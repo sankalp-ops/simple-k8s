@@ -6,15 +6,15 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /$1
     kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    external-dns.alpha.kubernetes.io/hostname: myfibapp.xyz
+    external-dns.alpha.kubernetes.io/hostname: myfibapp.click
   name: backend-service
 spec:
   tls:
   - hosts:
-    - myfibapp.xyz
+    - myfibapp.click
     secretName: app-tls
   rules:
-  - host: myfibapp.xyz
+  - host: myfibapp.click
     http:
       paths:
       - backend:
@@ -31,15 +31,15 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    external-dns.alpha.kubernetes.io/hostname: myfibapp.xyz
+    external-dns.alpha.kubernetes.io/hostname: myfibapp.click
   name: frontend-service
 spec:
   tls:
   - hosts:
-    - myfibapp.xyz
+    - myfibapp.click
     secretName: app-tls
   rules:
-  - host: myfibapp.xyz
+  - host: myfibapp.click
     http:
       paths:
       - backend:

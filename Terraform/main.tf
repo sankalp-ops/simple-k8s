@@ -48,13 +48,6 @@ resource "aws_iam_role_policy_attachment" "eks_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
-resource "aws_route53_zone" "myapps_dns" {
-  name = "myfibapp.xyz"
-}
-
-output "aws_myapps_dns" {
-  value = aws_route53_zone.myapps_dns.name
-}
 
 data "aws_vpc" "default_vpc" {
   default = true
