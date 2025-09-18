@@ -13,6 +13,7 @@ jobs:
       KUBECONFIG_FILE: ./kubeconfig-eks
       AWS_REGION: "us-east-1"
       WORK_DIR: ./Terraform
+      Domain: myfibapp.click
 
     steps:
       # 1️⃣ Check out code
@@ -37,8 +38,6 @@ jobs:
       - name: Terraform Init
         run:   |
             terraform init -input=false
-            pwd
-            ls
         working-directory: ${{  env.WORK_DIR  }}       # ✅ path to your terraform folder
 
       - name: Terraform Plan
@@ -56,7 +55,7 @@ jobs:
           terraform output -json > tf-output.json
           echo "cluster=$(jq -r '."k8s-cluster".value' tf-output.json)"   >> $GITHUB_OUTPUT
           echo "region=$(jq -r '.aws_region.value' tf-output.json)"  >> $GITHUB_OUTPUT
-          echo "domain=$(jq -r '.aws_myapps_dns.value' tf-output.json)"     >> $GITHUB_OUTPUT
+          # echo "domain=$(jq -r '.aws_myapps_dns.value' tf-output.json)"     >> $GITHUB_OUTPUT
 
       # 5️⃣ Fetch kubeconfig for the new/existing cluster
       - name: Download kubeconfig
@@ -80,7 +79,7 @@ jobs:
             --repo https://kubernetes.github.io/ingress-nginx \
             --namespace ingress-nginx \
             --create-namespace \
-            --set-string controller.service.annotations."service.beta.kubernetes.io/aws-load-balancer-type"="nlb" \
+            --set-string controller.service.annotations."service\.beta\.kubernetes\.io/aws-load-balancer-type"="nlb" \
             --kubeconfig $KUBECONFIG_FILE
 
       # 8️⃣ ExternalDNS ServiceAccount & Chart
@@ -99,7 +98,7 @@ jobs:
             --set policy=upsert-only \
             --set registry=txt \
             --set txtOwnerId="${{ steps.tfout.outputs.domain }}" \
-            --set domainFilters={"${{ steps.tfout.outputs.domain }}"}  \
+            --set domainFilters={"${{ env.Domain }}"}  \
             --set serviceAccount.create=false \
             --set serviceAccount.name=external-dns \
             --kubeconfig $KUBECONFIG_FILE
