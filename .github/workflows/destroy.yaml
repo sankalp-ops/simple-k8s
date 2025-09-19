@@ -71,7 +71,7 @@ jobs:
         id: zone
         run: |
           ZONE_ID=$(aws route53 list-hosted-zones-by-name \
-            --dns-name myfibapp.xyz \
+            --dns-name ${{  env.Domain  }} \
             --query "HostedZones[0].Id" \
             --output text | awk -F/ '{print $3}')
           echo "zone_id=$ZONE_ID" >> "$GITHUB_OUTPUT"
