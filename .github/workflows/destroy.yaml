@@ -117,4 +117,4 @@ jobs:
 
       - name: Deleteing Terraform
         working-directory: ${{  env.WORK_DIR  }}
-        run: erraform destroy -auto-approve -input=false
+        run: terraform destroy -auto-approve -input=false
