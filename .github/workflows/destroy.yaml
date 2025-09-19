@@ -104,7 +104,7 @@ jobs:
             --query "ResourceRecordSets[?Type=='A' || Type=='AAAA']" --output json > records.json
 
           # Build a change batch for each record found
-          if [ -s records.json ]; then
+          if [ "$(jq 'length' records.json)" -gt 0 ]; then
             jq '{Changes: map({Action: "DELETE", ResourceRecordSet: .})}' records.json > change-batch.json
             cat change-batch.json
             aws route53 change-resource-record-sets --hosted-zone-id "$ZONE_ID" --change-batch file://change-batch.json
@@ -113,7 +113,7 @@ jobs:
           fi
 
       - name: Delete k8s Apps
-        run: kubectl delete -f ./k8s-apps -R --kubeconfig $KUBECONFIG_FILE
+        run: kubectl delete -f ./k8s-apps -R --kubeconfig "$KUBECONFIG_FILE" --ignore-not-found
 
       - name: Deleteing Terraform
         working-directory: ${{  env.WORK_DIR  }}
