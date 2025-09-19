@@ -57,15 +57,31 @@ jobs:
           version: v3.18.6
       - name: Delete Cert-Manager
         run: |
-          helm uninstall cert-manager -n cert-manager --kubeconfig $KUBECONFIG_FILE
+          if helm status cert-manager --namespace cert-manager --kubeconfig "$KUBECONFIG_FILE" >/dev/null 2>&1; then
+            echo "Uninstalling cert-manager..."
+            helm uninstall cert-manager --namespace cert-manager --kubeconfig "$KUBECONFIG_FILE"
+          else
+            echo "cert-manager not installed, skipping."
+          fi
           
       - name: Delete External-DNS
         run: |
-          helm uninstall external-dns -n external-dns --kubeconfig $KUBECONFIG_FILE
+          if helm status external-dns --namespace external-dns --kubeconfig "$KUBECONFIG_FILE" >/dev/null 2>&1; then
+              echo "Uninstalling external-dns..."
+              helm uninstall external-dns --namespace external-dns --kubeconfig "$KUBECONFIG_FILE"
+          else
+              echo "external-dns not installed, skipping."
+          fi
+        
           
       - name: Delete nginx-ingress
         run: |
-          helm uninstall ingress-nginx -n ingress-nginx --kubeconfig $KUBECONFIG_FILE
+          if helm status ingress-nginx --namespace ingress-nginx --kubeconfig "$KUBECONFIG_FILE" >/dev/null 2>&1; then
+            echo "Uninstalling ingress-nginx..."
+            helm uninstall ingress-nginx --namespace ingress-nginx --kubeconfig "$KUBECONFIG_FILE"
+          else
+            echo "ingress-nginx not installed, skipping."
+          fi
 
       - name: Fetch Hosted Zone ID
         id: zone
