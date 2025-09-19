@@ -120,5 +120,4 @@ jobs:
           kubectl apply -f ./k8s-apps/postgres-deployment.yaml --kubeconfig $KUBECONFIG_FILE
           kubectl apply -f ./k8s-apps/postgres-pvc.yaml --kubeconfig $KUBECONFIG_FILE
           kubectl apply -f ./k8s-apps/postgres-service.yaml --kubeconfig $KUBECONFIG_FILE
-          sleep 5
           kubectl apply -f ./k8s-apps -R --kubeconfig $KUBECONFIG_FILE
