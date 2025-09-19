@@ -1,4 +1,4 @@
-name: Provision EKS & Deploy App
+name: Destroy Setup
 
 on:
   workflow_dispatch:
