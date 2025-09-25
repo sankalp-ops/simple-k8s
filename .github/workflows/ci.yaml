@@ -2,9 +2,8 @@ name: Provision EKS & Deploy App
 
 on:
   push:
-    branches: [ main ]       # run on pushes to main; adjust as needed
-  workflow_dispatch:         # allow manual runs from the Actions tab
-
+    branches: [ main ]       
+  workflow_dispatch:         
 jobs:
   deploy:
     runs-on: ubuntu-latest
