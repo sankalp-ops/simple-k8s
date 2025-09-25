@@ -16,17 +16,17 @@ jobs:
       Domain: myfibapp.click
 
     steps:
-      # 1️⃣ Check out code
+      # Check out code
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 2️⃣ Terraform CLI
+      #  Terraform CLI
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.9.5
 
-      # 3️⃣ AWS credentials
+      #  AWS credentials
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -34,11 +34,12 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 4️⃣ Terraform Init/Plan/Apply
+      # Terraform Init/Plan/Apply
       - name: Terraform Init
         run:   |
             terraform init -input=false
-        working-directory: ${{  env.WORK_DIR  }}       # ✅ path to your terraform folder
+        # path to your terraform folder
+        working-directory: ${{  env.WORK_DIR  }}       
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan -input=false
@@ -57,7 +58,7 @@ jobs:
           echo "region=$(jq -r '.aws_region.value' tf-output.json)"  >> $GITHUB_OUTPUT
           # echo "domain=$(jq -r '.aws_myapps_dns.value' tf-output.json)"     >> $GITHUB_OUTPUT
 
-      # 5️⃣ Fetch kubeconfig for the new/existing cluster
+      # Fetch kubeconfig for the new/existing cluster
       - name: Download kubeconfig
         run: |
           aws eks update-kubeconfig \
@@ -65,13 +66,13 @@ jobs:
             --region "${{ steps.tfout.outputs.region }}"  \
             --kubeconfig $KUBECONFIG_FILE
 
-      # 6️⃣ Install Helm
+      # Install Helm
       - name: Install Helm
         uses: azure/setup-helm@v4
         with:
           version: v3.18.6
 
-      # 7️⃣ Deploy Ingress-NGINX
+      # Deploy Ingress-NGINX
       - name: Deploy Ingress NGINX
         run: |
           helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
@@ -82,7 +83,7 @@ jobs:
             --set-string controller.service.annotations."service\.beta\.kubernetes\.io/aws-load-balancer-type"="nlb" \
             --kubeconfig $KUBECONFIG_FILE
 
-      # 8️⃣ ExternalDNS ServiceAccount & Chart
+      #  ExternalDNS ServiceAccount & Chart
       - name: Create external-dns namespace & SA
         run: |
           kubectl create ns external-dns --kubeconfig $KUBECONFIG_FILE || true
@@ -103,7 +104,7 @@ jobs:
             --set serviceAccount.name=external-dns \
             --kubeconfig $KUBECONFIG_FILE
 
-      # 9️⃣ Cert-Manager
+      # Cert-Manager
       - name: Deploy Cert Manager
         run: |
           helm repo add jetstack https://charts.jetstack.io
@@ -113,7 +114,7 @@ jobs:
             --set installCRDs=true \
             --kubeconfig $KUBECONFIG_FILE
 
-      # 🔟 Deploy your own application
+      # Deploy your own application
       - name: Deploy App
         run: |
           kubectl apply -f ./k8s-apps/postgres-secret.yaml --kubeconfig $KUBECONFIG_FILE
