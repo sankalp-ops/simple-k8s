@@ -2,9 +2,8 @@ name: Provision EKS & Deploy App
 
 on:
   push:
-    branches: [ main ]       # run on pushes to main; adjust as needed
-  workflow_dispatch:         # allow manual runs from the Actions tab
-
+    branches: [ main ]       
+  workflow_dispatch:         
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -13,19 +12,20 @@ jobs:
       KUBECONFIG_FILE: ./kubeconfig-eks
       AWS_REGION: "us-east-1"
       WORK_DIR: ./Terraform
+      Domain: myfibapp.click
 
     steps:
-      # 1️⃣ Check out code
+      # Check out code
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 2️⃣ Terraform CLI
+      #  Terraform CLI
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.9.5
 
-      # 3️⃣ AWS credentials
+      #  AWS credentials
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -33,13 +33,12 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 4️⃣ Terraform Init/Plan/Apply
+      # Terraform Init/Plan/Apply
       - name: Terraform Init
         run:   |
             terraform init -input=false
-            pwd
-            ls
-        working-directory: ${{  env.WORK_DIR  }}       # ✅ path to your terraform folder
+        # path to your terraform folder
+        working-directory: ${{  env.WORK_DIR  }}       
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan -input=false
@@ -56,9 +55,9 @@ jobs:
           terraform output -json > tf-output.json
           echo "cluster=$(jq -r '."k8s-cluster".value' tf-output.json)"   >> $GITHUB_OUTPUT
           echo "region=$(jq -r '.aws_region.value' tf-output.json)"  >> $GITHUB_OUTPUT
-          echo "domain=$(jq -r '.aws_myapps_dns.value' tf-output.json)"     >> $GITHUB_OUTPUT
+          # echo "domain=$(jq -r '.aws_myapps_dns.value' tf-output.json)"     >> $GITHUB_OUTPUT
 
-      # 5️⃣ Fetch kubeconfig for the new/existing cluster
+      # Fetch kubeconfig for the new/existing cluster
       - name: Download kubeconfig
         run: |
           aws eks update-kubeconfig \
@@ -66,13 +65,13 @@ jobs:
             --region "${{ steps.tfout.outputs.region }}"  \
             --kubeconfig $KUBECONFIG_FILE
 
-      # 6️⃣ Install Helm
+      # Install Helm
       - name: Install Helm
         uses: azure/setup-helm@v4
         with:
           version: v3.18.6
 
-      # 7️⃣ Deploy Ingress-NGINX
+      # Deploy Ingress-NGINX
       - name: Deploy Ingress NGINX
         run: |
           helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
@@ -80,10 +79,10 @@ jobs:
             --repo https://kubernetes.github.io/ingress-nginx \
             --namespace ingress-nginx \
             --create-namespace \
-            --set-string controller.service.annotations."service.beta.kubernetes.io/aws-load-balancer-type"="nlb" \
+            --set-string controller.service.annotations."service\.beta\.kubernetes\.io/aws-load-balancer-type"="nlb" \
             --kubeconfig $KUBECONFIG_FILE
 
-      # 8️⃣ ExternalDNS ServiceAccount & Chart
+      #  ExternalDNS ServiceAccount & Chart
       - name: Create external-dns namespace & SA
         run: |
           kubectl create ns external-dns --kubeconfig $KUBECONFIG_FILE || true
@@ -99,12 +98,12 @@ jobs:
             --set policy=upsert-only \
             --set registry=txt \
             --set txtOwnerId="${{ steps.tfout.outputs.domain }}" \
-            --set domainFilters={"${{ steps.tfout.outputs.domain }}"}  \
+            --set domainFilters={"${{ env.Domain }}"}  \
             --set serviceAccount.create=false \
             --set serviceAccount.name=external-dns \
             --kubeconfig $KUBECONFIG_FILE
 
-      # 9️⃣ Cert-Manager
+      # Cert-Manager
       - name: Deploy Cert Manager
         run: |
           helm repo add jetstack https://charts.jetstack.io
@@ -114,7 +113,11 @@ jobs:
             --set installCRDs=true \
             --kubeconfig $KUBECONFIG_FILE
 
-      # 🔟 Deploy your own application
-      #- name: Deploy App
-       # run: |
-        #  kubectl apply -f ./k8s-apps --kubeconfig $KUBECONFIG_FILE
+      # Deploy your own application
+      - name: Deploy App
+        run: |
+          kubectl apply -f ./k8s-apps/postgres-secret.yaml --kubeconfig $KUBECONFIG_FILE
+          kubectl apply -f ./k8s-apps/postgres-deployment.yaml --kubeconfig $KUBECONFIG_FILE
+          kubectl apply -f ./k8s-apps/postgres-pvc.yaml --kubeconfig $KUBECONFIG_FILE
+          kubectl apply -f ./k8s-apps/postgres-service.yaml --kubeconfig $KUBECONFIG_FILE
+          kubectl apply -f ./k8s-apps -R --kubeconfig $KUBECONFIG_FILE
